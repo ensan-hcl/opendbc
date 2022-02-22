@@ -148,7 +148,7 @@ class TestCanParserPacker(unittest.TestCase):
       parser.update_string(bts)
 
       # and read back
-      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 255)
+      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 256)
       self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["STEERING_ANGLE"], steer)
 
       idx += 1

@@ -21,6 +21,7 @@ bool MessageState::parse(uint64_t sec, uint8_t * dat) {
     auto& sig = parse_sigs[i];
     int64_t tmp;
 
+
     if (sig.is_little_endian) {
       tmp = (dat_le >> sig.b1) & ((1ULL << sig.size)-1);
     } else {
@@ -141,6 +142,7 @@ CANParser::CANParser(int abus, const std::string& dbc_name,
     }
 
     state.size = msg->size;
+    assert(state.size < 64);  // max signal size is 8 bytes
 
     // track checksums and counters for this message
     for (int i = 0; i < msg->num_sigs; i++) {
@@ -237,8 +239,17 @@ void CANParser::UpdateCans(uint64_t sec, const capnp::List<cereal::CanData>::Rea
       continue;
     }
 
-    if (cmsg.getDat().size() > 8) continue; //shouldn't ever happen
-    uint8_t dat[8] = {0};
+    if (cmsg.getDat().size() > 64) {
+      //DEBUG("got message longer than 64 bytes: %d %d\n", cmsg.getAddress(), cmsg.getSize());
+      continue;
+    }
+
+    if (cmsg.getDat().size() != state_it->second.size) {
+      DEBUG("got message with unexpected length: expected %d, got %d for %d", state_it->second.size, cmsg.getSize(), cmsg.getAddress());
+      continue;
+    }
+
+    uint8_t dat[64] = {0};
     memcpy(dat, cmsg.getDat().begin(), cmsg.getDat().size());
 
     state_it->second.parse(sec, dat);
