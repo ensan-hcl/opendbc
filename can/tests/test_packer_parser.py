@@ -123,6 +123,36 @@ class TestCanParserPacker(unittest.TestCase):
 
         idx += 1
 
+  def test_hyundai(self):
+    # little endian + CAN-FD
+
+    signals = [
+      ("COUNTER", "STEERING_SENSORS"),
+      ("STEERING_ANGLE", "STEERING_SENSORS"),
+    ]
+    checks = [("STEERING_SENSORS", 0)]
+
+    parser = CANParser("kia_ev6", signals, checks, 0)
+    packer = CANPacker("kia_ev6")
+
+    idx = 0
+    for steer in range(-256, 255):
+      values = {
+        "COUNTER": idx,
+        "STEERING_ANGLE": steer,
+      }
+
+      # pack
+      msgs = packer.make_can_msg("STEERING_SENSORS", 0, values)
+      bts = can_list_to_can_capnp([msgs])
+      parser.update_string(bts)
+
+      # and read back
+      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 255)
+      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["STEERING_ANGLE"], steer)
+
+      idx += 1
+
   def test_updated(self):
     """Test updated value dict"""
     dbc_file = "honda_civic_touring_2016_can_generated"

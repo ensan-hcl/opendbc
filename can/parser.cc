@@ -21,14 +21,14 @@ bool MessageState::parse(uint64_t sec, uint8_t * dat) {
     auto& sig = parse_sigs[i];
     int64_t tmp;
 
-    if (sig.is_little_endian){
-      tmp = (dat_le >> sig.b1) & ((1ULL << sig.b2)-1);
+    if (sig.is_little_endian) {
+      tmp = (dat_le >> sig.b1) & ((1ULL << sig.size)-1);
     } else {
-      tmp = (dat_be >> sig.bo) & ((1ULL << sig.b2)-1);
+      tmp = (dat_be >> sig.bo) & ((1ULL << sig.size)-1);
     }
 
     if (sig.is_signed) {
-      tmp -= (tmp >> (sig.b2-1)) ? (1ULL << sig.b2) : 0; //signed
+      tmp -= (tmp >> (sig.size-1)) ? (1ULL << sig.size) : 0;
     }
 
     DEBUG("parse 0x%X %s -> %lld\n", address, sig.name, tmp);
@@ -68,15 +68,15 @@ bool MessageState::parse(uint64_t sec, uint8_t * dat) {
     }
     if (!ignore_counter) {
       if (sig.type == SignalType::HONDA_COUNTER) {
-        if (!update_counter_generic(tmp, sig.b2)) {
+        if (!update_counter_generic(tmp, sig.size)) {
           return false;
         }
       } else if (sig.type == SignalType::VOLKSWAGEN_COUNTER) {
-          if (!update_counter_generic(tmp, sig.b2)) {
+          if (!update_counter_generic(tmp, sig.size)) {
           return false;
         }
       } else if (sig.type == SignalType::PEDAL_COUNTER) {
-        if (!update_counter_generic(tmp, sig.b2)) {
+        if (!update_counter_generic(tmp, sig.size)) {
           return false;
         }
       }

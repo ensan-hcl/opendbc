@@ -24,7 +24,7 @@ cdef extern from "common_dbc.h":
 
   cdef struct Signal:
     const char* name
-    int b1, b2, bo
+    int b1, bo, size
     bool is_signed
     double factor, offset
     SignalType type

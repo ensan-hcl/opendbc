@@ -22,8 +22,8 @@ uint64_t ReverseBytes(uint64_t x) {
 
 static uint64_t set_value(uint64_t ret, const Signal& sig, int64_t ival) {
   int shift = sig.is_little_endian? sig.b1 : sig.bo;
-  uint64_t mask = ((1ULL << sig.b2)-1) << shift;
-  uint64_t dat = (ival & ((1ULL << sig.b2)-1)) << shift;
+  uint64_t mask = ((1ULL << sig.size)-1) << shift;
+  uint64_t dat = (ival & ((1ULL << sig.size)-1)) << shift;
   if (sig.is_little_endian) {
     dat = ReverseBytes(dat);
     mask = ReverseBytes(mask);
@@ -62,7 +62,7 @@ uint64_t CANPacker::pack(uint32_t address, const std::vector<SignalPackValue> &s
 
     int64_t ival = (int64_t)(round((value - sig.offset) / sig.factor));
     if (ival < 0) {
-      ival = (1ULL << sig.b2) + ival;
+      ival = (1ULL << sig.size) + ival;
     }
 
     ret = set_value(ret, sig, ival);
