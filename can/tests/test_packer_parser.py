@@ -127,29 +127,31 @@ class TestCanParserPacker(unittest.TestCase):
     # little endian + CAN-FD
 
     signals = [
+      ("GEAR", "ACCELERATOR"),
+      ("COUNTER", "ACCELERATOR"),
       ("COUNTER", "STEERING_SENSORS"),
       ("STEERING_ANGLE", "STEERING_SENSORS"),
     ]
-    checks = [("STEERING_SENSORS", 0)]
+    checks = [(s, 0) for _, s in signals]
 
     parser = CANParser("kia_ev6", signals, checks, 0)
     packer = CANPacker("kia_ev6")
 
     idx = 0
     for steer in range(-256, 255):
-      values = {
-        "COUNTER": idx,
-        "STEERING_ANGLE": steer,
-      }
+      for gear in range(7):
+        # pack
+        m1 = packer.make_can_msg("ACCELERATOR", 0, {"COUNTER": idx, "GEAR": gear})
+        m2 = packer.make_can_msg("STEERING_SENSORS", 0, {"COUNTER": idx, "STEERING_ANGLE": steer})
+        bts = can_list_to_can_capnp([m1, m2])
+        parser.update_string(bts)
 
-      # pack
-      msgs = packer.make_can_msg("STEERING_SENSORS", 0, values)
-      bts = can_list_to_can_capnp([msgs])
-      parser.update_string(bts)
-
-      # and read back
-      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 256)
-      self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["STEERING_ANGLE"], steer)
+        # and read back
+        self.assertAlmostEqual(parser.vl["ACCELERATOR"]["COUNTER"], idx % 256)
+        self.assertAlmostEqual(parser.vl["ACCELERATOR"]["GEAR"], gear)
+        self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 256)
+        self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["STEERING_ANGLE"], steer)
+        print(parser.vl["ACCELERATOR"])
 
       idx += 1
 
