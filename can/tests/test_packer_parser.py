@@ -26,37 +26,50 @@ def can_list_to_can_capnp(can_msgs, msgtype='can'):
 
 
 class TestCanParserPacker(unittest.TestCase):
-  def test_civic(self):
-
-    dbc_file = "honda_civic_touring_2016_can_generated"
+  def test_packer_parser(self):
 
     signals = [
       ("STEER_TORQUE", "STEERING_CONTROL"),
       ("STEER_TORQUE_REQUEST", "STEERING_CONTROL"),
-    ]
-    checks = [("STEERING_CONTROL", 50)]
 
-    parser = CANParser(dbc_file, signals, checks, 0)
-    packer = CANPacker(dbc_file)
+      ("COUNTER", "CAN_FD_MESSAGE"),
+      ("64_BIT_LE", "CAN_FD_MESSAGE"),
+      ("64_BIT_BE", "CAN_FD_MESSAGE"),
+      ("64_BIT_SIGNED", "CAN_FD_MESSAGE"),
+    ]
+    checks = [("STEERING_CONTROL", 0), ("CAN_FD_MESSAGE", 0)]
+
+    parser = CANParser("test", signals, checks, 0)
+    packer = CANPacker("test")
 
     idx = 0
 
     for steer in range(-256, 255):
       for active in (1, 0):
-        values = {
+        v1 = {
           "STEER_TORQUE": steer,
           "STEER_TORQUE_REQUEST": active,
         }
+        m1 = packer.make_can_msg("STEERING_CONTROL", 0, v1, idx)
 
-        msgs = packer.make_can_msg("STEERING_CONTROL", 0, values, idx)
-        bts = can_list_to_can_capnp([msgs])
+        v2 = {
+          "COUNTER": idx,
+          "64_BIT_LE": random.randint(0, 100),
+          "64_BIT_BE": random.randint(0, 100),
+          "64_BIT_SIGNED": random.random() * random.randint(0, 100),
+        }
+        m2 = packer.make_can_msg("CAN_FD_MESSAGE", 0, v2)
 
+        bts = can_list_to_can_capnp([m1, m2])
         parser.update_string(bts)
 
-        self.assertAlmostEqual(parser.vl["STEERING_CONTROL"]["STEER_TORQUE"], steer)
-        self.assertAlmostEqual(parser.vl["STEERING_CONTROL"]["STEER_TORQUE_REQUEST"], active)
-        self.assertAlmostEqual(parser.vl["STEERING_CONTROL"]["COUNTER"], idx % 4)
+        for key, val in v1.items():
+          self.assertAlmostEqual(parser.vl["STEERING_CONTROL"][key], val)
 
+        for key, val in v2.items():
+          self.assertAlmostEqual(parser.vl["CAN_FD_MESSAGE"][key], val)
+
+        # also check address
         for sig in ("STEER_TORQUE", "STEER_TORQUE_REQUEST", "COUNTER", "CHECKSUM"):
           self.assertEqual(parser.vl["STEERING_CONTROL"][sig], parser.vl[228][sig])
 
@@ -122,38 +135,6 @@ class TestCanParserPacker(unittest.TestCase):
         self.assertAlmostEqual(parser.vl["ES_LKAS"]["Counter"], idx % 16)
 
         idx += 1
-
-  def test_hyundai(self):
-    # little endian + CAN-FD
-
-    signals = [
-      ("GEAR", "ACCELERATOR"),
-      ("COUNTER", "ACCELERATOR"),
-      ("COUNTER", "STEERING_SENSORS"),
-      ("STEERING_ANGLE", "STEERING_SENSORS"),
-    ]
-    checks = [(s, 0) for _, s in signals]
-
-    parser = CANParser("kia_ev6", signals, checks, 0)
-    packer = CANPacker("kia_ev6")
-
-    idx = 0
-    for steer in range(-256, 255):
-      for gear in range(7):
-        # pack
-        m1 = packer.make_can_msg("ACCELERATOR", 0, {"COUNTER": idx, "GEAR": gear})
-        m2 = packer.make_can_msg("STEERING_SENSORS", 0, {"COUNTER": idx, "STEERING_ANGLE": steer})
-        bts = can_list_to_can_capnp([m1, m2])
-        parser.update_string(bts)
-
-        # and read back
-        self.assertAlmostEqual(parser.vl["ACCELERATOR"]["COUNTER"], idx % 256)
-        self.assertAlmostEqual(parser.vl["ACCELERATOR"]["GEAR"], gear)
-        self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["COUNTER"], idx % 256)
-        self.assertAlmostEqual(parser.vl["STEERING_SENSORS"]["STEERING_ANGLE"], steer)
-        print(parser.vl["ACCELERATOR"])
-
-      idx += 1
 
   def test_updated(self):
     """Test updated value dict"""
