@@ -6,13 +6,10 @@ import numpy as np
 zmq = 'zmq'
 arch = subprocess.check_output(["uname", "-m"], encoding='utf8').rstrip()
 
-cereal_dir = Dir('.')
 
 python_path = sysconfig.get_paths()['include']
 cpppath = [
   '#',
-  '#cereal',
-  "#cereal/messaging",
   "#opendbc/can",
   '/usr/lib/include',
   python_path
@@ -56,9 +53,6 @@ env = Environment(
 common = ''
 Export('env', 'zmq', 'arch', 'common')
 
-cereal = [File('#cereal/libcereal.a')]
-messaging = [File('#cereal/libmessaging.a')]
-Export('cereal', 'messaging')
 
 
 envCython = env.Clone()
@@ -80,5 +74,4 @@ envCython["LIBS"] = python_libs
 Export('envCython')
 
 
-SConscript(['cereal/SConscript'])
-SConscript(['opendbc/can/SConscript'])
+SConscript(['can/SConscript'])

@@ -8,9 +8,6 @@
 #include <capnp/dynamic.h>
 #include <capnp/serialize.h>
 
-#ifndef DYNAMIC_CAPNP
-#include "cereal/gen/cpp/log.capnp.h"
-#endif
 
 #define INFO printf
 #define WARN printf
@@ -83,7 +80,6 @@ public:
   CANParser(int abus, const std::string& dbc_name, bool ignore_checksum, bool ignore_counter);
   #ifndef DYNAMIC_CAPNP
   void update_string(const std::string &data, bool sendcan);
-  void UpdateCans(uint64_t sec, const capnp::List<cereal::CanData>::Reader& cans);
   void update_candata(uint64_t sec, const std::vector<CanData> cans);
   #endif
   void UpdateCans(uint64_t sec, const capnp::DynamicStruct::Reader& cans);

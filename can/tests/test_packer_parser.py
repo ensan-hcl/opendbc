@@ -2,9 +2,8 @@
 import unittest
 import random
 
-import cereal.messaging as messaging
-from opendbc.can.parser import CANParser
-from opendbc.can.packer import CANPacker
+from can.parser import CANParser
+from can.packer import CANPacker
 
 # Python implementation so we don't have to depend on boardd
 def can_list_to_can_capnp(can_msgs, msgtype='can', logMonoTime=None):
